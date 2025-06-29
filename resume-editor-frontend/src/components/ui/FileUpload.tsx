@@ -1,5 +1,6 @@
 import React from "react";
-import { uploadResume } from "src/api/resumeApi";
+import { uploadResume } from "../../api/resumeApi";
+
 
 interface FileUploadProps {
   onParsed: (data: any) => void; // function to send parsed resume to parent
