@@ -34,3 +34,31 @@ Resume-Editor/
 yaml
 Copy
 Edit
+
+
+
+✅ Features
+Upload PDF/DOCX resumes
+
+Extract dummy content
+
+Inline editing of each section
+
+"Enhance with AI" per section (mock)
+
+Save to backend (Render)
+
+Download as .json
+
+📦 Technologies Used
+Frontend: React, Vite, Tailwind, TypeScript
+
+Backend: FastAPI, pdfplumber, python-docx
+
+Hosting: Vercel (frontend), Render (backend)
+
+📜 License
+MIT
+
+🙌 Credits
+Built by @waqarbytes
