@@ -97,7 +97,7 @@ const Index = () => {
     try {
       toast({ title: "Uploading...", description: "Parsing your resume..." });
 
-      const res = await fetch("https://resume-editor-zv17.onrender.com/upload-resume", {
+      const res = await fetch("https://resume-editor-zv17.onrender.com/docs#/default/upload_resume_upload_resume_post", {
         method: "POST",
         body: formData,
       });
@@ -129,7 +129,7 @@ const Index = () => {
   const enhanceWithAI = async (section: string) => {
     setIsEnhancing((prev) => ({ ...prev, [section]: true }));
     try {
-      const res = await fetch("https://resume-editor-zv17.onrender.com/ai-enhance", {
+      const res = await fetch("https://resume-editor-zv17.onrender.com/docs#/default/ai_enhance_ai_enhance_post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section, content: resume[section as keyof Resume] }),
@@ -155,7 +155,7 @@ const Index = () => {
 
   const saveResume = async () => {
     try {
-      await fetch("https://resume-editor-zv17.onrender.com/save-resume", {
+      await fetch("https://resume-editor-zv17.onrender.com/docs#/default/save_resume_save_resume_post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(resume),
