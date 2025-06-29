@@ -1,4 +1,4 @@
-const API_BASE = "https://resume-editor-gtvf.onrender.com";
+const API_BASE = "https://resume-editor-zv17.onrender.com";
 
 export async function uploadResume(file) {
   const formData = new FormData();
