@@ -20,8 +20,6 @@ interface Resume {
   email: string;
   phone: string;
   summary: string;
-  experience: any[];
-  education: any[];
   skills: string[];
 }
 
@@ -31,21 +29,10 @@ const Index = () => {
     email: "",
     phone: "",
     summary: "",
-    experience: [],
-    education: [],
-    skills: [],
+    skills: []
   });
 
   const [skillInput, setSkillInput] = useState("");
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
-  const [isEnhancing, setIsEnhancing] = useState<Record<string, boolean>>({});
-
-  const toggleSection = (section: string) => {
-    setCollapsedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
 
   const handleFileClick = () => {
     const fileInput = document.getElementById("resume-upload") as HTMLInputElement;
@@ -63,11 +50,7 @@ const Index = () => {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid File Type",
-        description: "Please select a PDF or DOCX file.",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid File", description: "Upload a PDF or DOCX.", variant: "destructive" });
       return;
     }
 
@@ -75,62 +58,27 @@ const Index = () => {
     formData.append("file", file);
 
     try {
-      toast({ title: "Uploading...", description: "Parsing your resume..." });
+      toast({ title: "Uploading...", description: "Parsing resume..." });
 
       const res = await fetch("https://resume-editor-zv17.onrender.com/upload-resume", {
         method: "POST",
         body: formData,
       });
 
-      const data = await res.json();
+      if (!res.ok) throw new Error(await res.text());
 
+      const data = await res.json();
       setResume({
         name: data.name || "",
         email: "",
         phone: "",
         summary: data.summary || "",
-        experience: data.experience || [],
-        education: data.education || [],
         skills: data.skills || [],
       });
 
-      toast({
-        title: "Resume Loaded",
-        description: "Resume content has been loaded successfully!",
-      });
-    } catch (err) {
-      toast({
-        title: "Upload Failed",
-        description: "Could not upload resume. Try again later.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const enhanceWithAI = async (section: string) => {
-    setIsEnhancing((prev) => ({ ...prev, [section]: true }));
-    try {
-      const res = await fetch("https://resume-editor-zv17.onrender.com/ai-enhance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section, content: resume[section as keyof Resume] }),
-      });
-
-      const data = await res.json();
-      setResume((prev) => ({ ...prev, [section]: data.enhanced }));
-
-      toast({
-        title: "AI Enhancement Complete",
-        description: `Your ${section} section has been enhanced!`,
-      });
-    } catch (err) {
-      toast({
-        title: "Enhancement Failed",
-        description: "Could not enhance section.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsEnhancing((prev) => ({ ...prev, [section]: false }));
+      toast({ title: "Resume Loaded", description: "Fields are ready to edit." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to upload.", variant: "destructive" });
     }
   };
 
@@ -141,67 +89,101 @@ const Index = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(resume),
       });
-
-      toast({
-        title: "Resume Saved",
-        description: "Resume has been saved successfully.",
-      });
+      toast({ title: "Saved", description: "Resume saved to backend." });
     } catch (err) {
-      toast({
-        title: "Save Failed",
-        description: "Could not save resume.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Could not save.", variant: "destructive" });
     }
   };
 
   const downloadResume = () => {
     const dataStr = JSON.stringify(resume, null, 2);
-    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-    const fileName = `${resume.name.replace(/\s+/g, "_") || "resume"}.json`;
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "resume.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
-    const link = document.createElement("a");
-    link.href = dataUri;
-    link.download = fileName;
-    link.click();
+  const addSkill = () => {
+    if (skillInput.trim() && !resume.skills.includes(skillInput.trim())) {
+      setResume(prev => ({ ...prev, skills: [...prev.skills, skillInput.trim()] }));
+      setSkillInput("");
+    }
+  };
+
+  const removeSkill = (skill: string) => {
+    setResume(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold">Resume Editor</h1>
-          <p className="text-gray-600">Upload, enhance, and export your resume</p>
-        </div>
+    <div className="max-w-3xl mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold text-center mb-4">Resume Editor</h1>
 
-        <Card className="mb-6 border-2 border-dashed border-blue-200">
-          <CardContent className="p-6 text-center">
-            <Upload className="h-10 w-10 mx-auto mb-3 text-blue-600" />
-            <p className="mb-4 text-gray-600">Upload a PDF or DOCX file</p>
-            <input
-              type="file"
-              accept=".pdf,.docx"
-              className="hidden"
-              id="resume-upload"
-              onChange={handleFileUpload}
-            />
-            <Button onClick={handleFileClick}>Choose File</Button>
-          </CardContent>
-        </Card>
+      <Card className="mb-4 border-2 border-dashed border-blue-300">
+        <CardContent className="text-center p-6">
+          <Upload className="mx-auto h-10 w-10 text-blue-600 mb-2" />
+          <p className="text-gray-600">Upload PDF or DOCX to begin editing</p>
+          <input type="file" accept=".pdf,.docx" className="hidden" id="resume-upload" onChange={handleFileUpload} />
+          <Button onClick={handleFileClick} className="mt-3">Choose File</Button>
+        </CardContent>
+      </Card>
 
-        <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-          <Button onClick={saveResume} className="bg-green-600 text-white">
-            <Save className="mr-2 h-4 w-4" />
-            Save
-          </Button>
-          <Button onClick={downloadResume} variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Download JSON
-          </Button>
-        </div>
+      <Card className="mb-4">
+        <CardHeader><CardTitle>Personal Information</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <Input placeholder="Full Name" value={resume.name} onChange={e => setResume({ ...resume, name: e.target.value })} />
+          <Input placeholder="Email" value={resume.email} onChange={e => setResume({ ...resume, email: e.target.value })} />
+          <Input placeholder="Phone" value={resume.phone} onChange={e => setResume({ ...resume, phone: e.target.value })} />
+        </CardContent>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle>Summary</CardTitle>
+          <Button variant="outline" size="sm" onClick={() => enhanceWithAI("summary")}> <Sparkles className="h-4 w-4 mr-1" /> Enhance </Button>
+        </CardHeader>
+        <CardContent>
+          <Textarea value={resume.summary} onChange={e => setResume({ ...resume, summary: e.target.value })} rows={5} />
+        </CardContent>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader><CardTitle>Skills</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex space-x-2 mb-2">
+            <Input value={skillInput} onChange={e => setSkillInput(e.target.value)} placeholder="e.g., JavaScript" />
+            <Button onClick={addSkill}><Plus className="h-4 w-4" /></Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {resume.skills.map(skill => (
+              <span key={skill} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+                {skill}
+                <button className="ml-2 text-red-600" onClick={() => removeSkill(skill)}>&times;</button>
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-center gap-4 mt-6">
+        <Button onClick={saveResume} className="bg-green-600 text-white"><Save className="h-4 w-4 mr-2" /> Save</Button>
+        <Button onClick={downloadResume} variant="outline"><Download className="h-4 w-4 mr-2" /> Download</Button>
       </div>
     </div>
   );
 };
+
+async function enhanceWithAI(section: string) {
+  const content = resume[section as keyof Resume];
+  const res = await fetch("https://resume-editor-zv17.onrender.com/ai-enhance", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ section, content }),
+  });
+  const data = await res.json();
+  setResume(prev => ({ ...prev, [section]: data.enhanced }));
+}
 
 export default Index;
