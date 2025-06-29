@@ -1,74 +1,71 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from typing import List
-import os
 import pdfplumber
 import docx
 import json
 
 app = FastAPI()
 
-# ✅ Allow CORS for frontend
+# ✅ CORS config to allow frontend connection (Vercel, etc.)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production: replace with ['https://resume-editor.vercel.app']
+    allow_origins=["*"],  # In production: use your real domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Dummy in-memory store
+# In-memory storage
 stored_resumes = []
 
-# Utility: Extract text from PDF
+# ✅ Extract text from PDF
 def extract_text_from_pdf(file: UploadFile):
-    text = ""
     with pdfplumber.open(file.file) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text() + "\n"
-    return text
+        return "\n".join(
+            page.extract_text() for page in pdf.pages if page.extract_text()
+        )
 
-# Utility: Extract text from DOCX
+# ✅ Extract text from DOCX
 def extract_text_from_docx(file: UploadFile):
     doc = docx.Document(file.file)
-    return "\n".join([para.text for para in doc.paragraphs])
+    return "\n".join(
+        para.text for para in doc.paragraphs if para.text.strip()
+    )
 
-# Mock parser to structure resume data
-def mock_parse_resume(text: str):
-    return {
-        "name": "John Doe",
-        "summary": "Experienced software developer with expertise in React and FastAPI.",
-        "education": [
-            {"degree": "B.Tech", "institution": "XYZ University", "year": "2022"}
-        ],
-        "experience": [
-            {"company": "ABC Corp", "role": "Frontend Developer", "duration": "2 years"}
-        ],
-        "skills": ["React", "JavaScript", "FastAPI", "HTML", "CSS"]
-    }
-
+# ✅ Upload endpoint
 @app.post("/upload-resume")
 async def upload_resume(file: UploadFile = File(...)):
-    ext = file.filename.split(".")[-1]
-    if ext == "pdf":
-        text = extract_text_from_pdf(file)
-    elif ext == "docx":
-        text = extract_text_from_docx(file)
-    else:
-        return JSONResponse(status_code=400, content={"error": "Unsupported file type"})
+    ext = file.filename.split(".")[-1].lower()
 
-    parsed = mock_parse_resume(text)
-    return parsed
+    try:
+        if ext == "pdf":
+            text = extract_text_from_pdf(file)
+        elif ext == "docx":
+            text = extract_text_from_docx(file)
+        else:
+            return JSONResponse(status_code=400, content={"error": "Unsupported file type"})
 
+        return {
+            "name": "Your Name",  # optionally extract this later
+            "summary": text[:1500],  # Limit summary to 1500 chars
+            "education": [],
+            "experience": [],
+            "skills": []
+        }
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+# ✅ Enhance endpoint (mock AI)
 @app.post("/ai-enhance")
 async def ai_enhance(data: dict):
     section = data.get("section")
     content = data.get("content")
 
-    # Mock enhancement
+    # Basic mocked AI enhancement
     if isinstance(content, list):
-        enhanced = content  # could add mock AI improvements here
+        enhanced = [f"{item} (Enhanced)" for item in content]
     elif isinstance(content, str):
         enhanced = f"{content.strip()} (Enhanced by AI)"
     else:
@@ -76,9 +73,13 @@ async def ai_enhance(data: dict):
 
     return {"enhanced": enhanced}
 
+# ✅ Save resume to file and memory
 @app.post("/save-resume")
 async def save_resume(data: dict):
     stored_resumes.append(data)
-    with open("saved_resume.json", "w") as f:
-        json.dump(data, f, indent=2)
-    return {"message": "Resume saved successfully"}
+    try:
+        with open("saved_resume.json", "w") as f:
+            json.dump(data, f, indent=2)
+        return {"message": "Resume saved successfully"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
