@@ -7,37 +7,36 @@ import json
 
 app = FastAPI()
 
-# ✅ CORS config to allow frontend connection (Vercel, etc.)
+# ✅ Enable CORS for frontend connection
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://resume-editor-zeta.vercel.app/"],  # In production: use your real domain
+    allow_origins=["https://resume-editor-zeta.vercel.app"],  # Update with your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# In-memory storage
+# ✅ In-memory store
 stored_resumes = []
 
 # ✅ Extract text from PDF
-def extract_text_from_pdf(file: UploadFile):
+def extract_text_from_pdf(file: UploadFile) -> str:
     with pdfplumber.open(file.file) as pdf:
         return "\n".join(
             page.extract_text() for page in pdf.pages if page.extract_text()
         )
 
 # ✅ Extract text from DOCX
-def extract_text_from_docx(file: UploadFile):
+def extract_text_from_docx(file: UploadFile) -> str:
     doc = docx.Document(file.file)
     return "\n".join(
         para.text for para in doc.paragraphs if para.text.strip()
     )
 
-# ✅ Upload endpoint
+# ✅ Upload resume and extract content
 @app.post("/upload-resume")
 async def upload_resume(file: UploadFile = File(...)):
     ext = file.filename.split(".")[-1].lower()
-
     try:
         if ext == "pdf":
             text = extract_text_from_pdf(file)
@@ -47,8 +46,8 @@ async def upload_resume(file: UploadFile = File(...)):
             return JSONResponse(status_code=400, content={"error": "Unsupported file type"})
 
         return {
-            "name": "Your Name",  # optionally extract this later
-            "summary": text[:1500],  # Limit summary to 1500 chars
+            "name": "Your Name",  # optional: can be extracted later
+            "summary": text[:1500],  # cap summary to 1500 chars
             "education": [],
             "experience": [],
             "skills": []
@@ -57,13 +56,11 @@ async def upload_resume(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# ✅ Enhance endpoint (mock AI)
 @app.post("/ai-enhance")
 async def ai_enhance(data: dict):
     section = data.get("section")
     content = data.get("content")
 
-    # Basic mocked AI enhancement
     if isinstance(content, list):
         enhanced = [f"{item} (Enhanced)" for item in content]
     elif isinstance(content, str):
@@ -73,7 +70,7 @@ async def ai_enhance(data: dict):
 
     return {"enhanced": enhanced}
 
-# ✅ Save resume to file and memory
+# ✅ Save resume
 @app.post("/save-resume")
 async def save_resume(data: dict):
     stored_resumes.append(data)
