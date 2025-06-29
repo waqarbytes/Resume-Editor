@@ -10,7 +10,7 @@ app = FastAPI()
 # ✅ CORS config to allow frontend connection (Vercel, etc.)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production: use your real domain
+    allow_origins=["https://resume-editor-zeta.vercel.app/"],  # In production: use your real domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
