@@ -15,32 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 
-// 👇 Interfaces
-interface Experience {
-  id: string;
-  company: string;
-  position: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-}
-
-interface Education {
-  id: string;
-  institution: string;
-  degree: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-}
-
 interface Resume {
   name: string;
   email: string;
   phone: string;
   summary: string;
-  experience: Experience[];
-  education: Education[];
+  experience: any[];
+  education: any[];
   skills: string[];
 }
 
@@ -71,7 +52,6 @@ const Index = () => {
     fileInput?.click();
   };
 
-  // ✅ Updated handler to call backend
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -97,21 +77,22 @@ const Index = () => {
     try {
       toast({ title: "Uploading...", description: "Parsing your resume..." });
 
-      const res = await fetch("https://resume-editor-zv17.onrender.com/docs#/default/upload_resume_upload_resume_post", {
+      const res = await fetch("https://resume-editor-zv17.onrender.com/upload-resume", {
         method: "POST",
         body: formData,
       });
 
       const data = await res.json();
 
-      setResume((prev) => ({
-        ...prev,
-        summary: data.summary || "",
+      setResume({
         name: data.name || "",
+        email: "",
+        phone: "",
+        summary: data.summary || "",
         experience: data.experience || [],
         education: data.education || [],
         skills: data.skills || [],
-      }));
+      });
 
       toast({
         title: "Resume Loaded",
@@ -129,7 +110,7 @@ const Index = () => {
   const enhanceWithAI = async (section: string) => {
     setIsEnhancing((prev) => ({ ...prev, [section]: true }));
     try {
-      const res = await fetch("https://resume-editor-zv17.onrender.com/docs#/default/ai_enhance_ai_enhance_post", {
+      const res = await fetch("https://resume-editor-zv17.onrender.com/ai-enhance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section, content: resume[section as keyof Resume] }),
@@ -155,13 +136,16 @@ const Index = () => {
 
   const saveResume = async () => {
     try {
-      await fetch("https://resume-editor-zv17.onrender.com/docs#/default/save_resume_save_resume_post", {
+      await fetch("https://resume-editor-zv17.onrender.com/save-resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(resume),
       });
 
-      toast({ title: "Resume Saved", description: "Resume has been saved successfully." });
+      toast({
+        title: "Resume Saved",
+        description: "Resume has been saved successfully.",
+      });
     } catch (err) {
       toast({
         title: "Save Failed",
@@ -182,8 +166,6 @@ const Index = () => {
     link.click();
   };
 
-  // ✂️ Shortened for clarity — keep your rendering for experience, education, skills...
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -192,7 +174,6 @@ const Index = () => {
           <p className="text-gray-600">Upload, enhance, and export your resume</p>
         </div>
 
-        {/* 👇 File Upload UI */}
         <Card className="mb-6 border-2 border-dashed border-blue-200">
           <CardContent className="p-6 text-center">
             <Upload className="h-10 w-10 mx-auto mb-3 text-blue-600" />
@@ -207,8 +188,6 @@ const Index = () => {
             <Button onClick={handleFileClick}>Choose File</Button>
           </CardContent>
         </Card>
-
-        {/* ✂️ Render personal info, summary, experience, education, skills (use your current UI) */}
 
         <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
           <Button onClick={saveResume} className="bg-green-600 text-white">
